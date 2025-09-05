@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ID Quest: The Learning Sage's Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation;
+        }
+        .card-bg {
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .btn-glow {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px 0 rgba(116, 79, 168, 0.75);
+        }
+        .btn-glow:hover {
+            box-shadow: 0 6px 20px 0 rgba(116, 79, 168, 0.9);
+            transform: translateY(-2px);
+        }
+        .option-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .option-btn:hover:not(:disabled) {
+            transform: scale(1.03);
+        }
+        .correct {
+            background-color: #22c55e !important; /* green-500 */
+            color: white !important;
+            border-color: #16a34a; /* green-600 */
+        }
+        .incorrect {
+            background-color: #ef4444 !important; /* red-500 */
+            color: white !important;
+            border-color: #dc2626; /* red-600 */
+        }
+        .disabled-options .option-btn {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-600 to-blue-500 min-h-screen flex items-center justify-center p-4">
+
+    <div id="game-container" class="w-full max-w-2xl mx-auto">
+        
+        <!-- Start Screen -->
+        <div id="start-screen" class="card-bg rounded-2xl p-8 md:p-12 text-center shadow-2xl">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">ID Quest</h1>
+            <p class="text-lg md:text-xl text-gray-600 mb-8">The Learning Sage's Challenge</p>
+            <p class="text-gray-700 mb-8">Test your knowledge and prove you have what it takes to be a master Instructional Designer. Answer correctly to earn points and claim your title!</p>
+            <button id="start-btn" class="btn-glow bg-purple-600 text-white font-bold py-3 px-8 rounded-full text-lg w-full md:w-auto">
+                Start the Challenge
+            </button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="hidden">
+            <div class="card-bg rounded-2xl p-6 md:p-8 shadow-2xl">
+                <!-- Header -->
+                <div class="flex justify-between items-center mb-6">
+                    <div class="text-sm font-semibold text-gray-600">
+                        Question <span id="question-number">1</span> of <span id="total-questions">10</span>
+                    </div>
+                    <div class="bg-purple-200 text-purple-800 font-bold py-2 px-4 rounded-full">
+                        Score: <span id="score">0</span>
+                    </div>
+                </div>
+
+                <!-- Question -->
+                <div class="mb-6">
+                    <p id="question-text" class="text-xl md:text-2xl font-semibold text-gray-800 leading-relaxed"></p>
+                </div>
+                
+                <!-- Options -->
+                <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Options will be dynamically inserted here -->
+                </div>
+                
+                <!-- Feedback & Next Button -->
+                <div class="mt-8 text-center">
+                    <p id="feedback-text" class="h-6 mb-4 text-lg font-semibold"></p>
+                    <button id="next-btn" class="btn-glow bg-blue-500 text-white font-bold py-3 px-8 rounded-full text-lg w-full md:w-auto hidden">
+                        Next Question &rarr;
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="end-screen" class="hidden card-bg rounded-2xl p-8 md:p-12 text-center shadow-2xl">
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-3">Challenge Complete!</h2>
+            <p class="text-lg text-gray-600 mb-6">Your final score is:</p>
+            <p id="final-score" class="text-6xl font-bold text-purple-600 mb-6"></p>
+            <p id="end-message" class="text-gray-700 font-semibold text-lg mb-8"></p>
+            <button id="restart-btn" class="btn-glow bg-purple-600 text-white font-bold py-3 px-8 rounded-full text-lg w-full md:w-auto">
+                Play Again
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const endScreen = document.getElementById('end-screen');
+
+        const startBtn = document.getElementById('start-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+
+        const questionNumberEl = document.getElementById('question-number');
+        const totalQuestionsEl = document.getElementById('total-questions');
+        const scoreEl = document.getElementById('score');
+        const questionTextEl = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackTextEl = document.getElementById('feedback-text');
+        const finalScoreEl = document.getElementById('final-score');
+        const endMessageEl = document.getElementById('end-message');
+
+        const questions = [
+            {
+                question: "Which instructional design model follows the phases: Analysis, Design, Development, Implementation, and Evaluation?",
+                options: ["SAM", "ADDIE", "Bloom's Taxonomy", "Kirkpatrick's Model"],
+                answer: "ADDIE"
+            },
+            {
+                question: "In Bloom's Taxonomy, which level represents the ability to create something new from existing knowledge?",
+                options: ["Analyzing", "Evaluating", "Creating", "Applying"],
+                answer: "Creating"
+            },
+            {
+                question: "Which of Gagne's Nine Events of Instruction involves helping learners recall prior knowledge?",
+                options: ["Gain attention", "Presenting the stimulus", "Stimulate recall of prior learning", "Provide guidance"],
+                answer: "Stimulate recall of prior learning"
+            },
+            {
+                question: "What is the primary purpose of a learning objective?",
+                options: ["To list all course content", "To describe what a learner will be able to do after training", "To be a guide for the instructor only", "To measure the instructor's success"],
+                answer: "To describe what a learner will be able to do after training"
+            },
+            {
+                question: "Kirkpatrick's Model of evaluation measures training effectiveness. Which level measures the impact on business results?",
+                options: ["Level 1: Reaction", "Level 2: Learning", "Level 3: Behavior", "Level 4: Results"],
+                answer: "Level 4: Results"
+            },
+            {
+                question: "Which learning theory suggests that people learn from one another, via observation, imitation, and modeling?",
+                options: ["Cognitivism", "Behaviorism", "Constructivism", "Social Learning Theory"],
+                answer: "Social Learning Theory"
+            },
+            {
+                question: "What does the 'A' in the SMART goal framework for objectives stand for?",
+                options: ["Actionable", "Achievable", "Audience", "Analysis"],
+                answer: "Achievable"
+            },
+            {
+                question: "A storyboard in instructional design is primarily used for:",
+                options: ["Writing the final exam", "Visualizing the sequence and content of a learning experience", "Marketing the course to learners", "Calculating the project budget"],
+                answer: "Visualizing the sequence and content of a learning experience"
+            },
+            {
+                question: "Which of these is a formative evaluation activity?",
+                options: ["A final certification exam", "Pilot testing a course with a small group of learners", "Measuring the course's ROI six months after launch", "A final survey about learner satisfaction"],
+                answer: "Pilot testing a course with a small group of learners"
+            },
+            {
+                question: "According to Mayer's Multimedia Principle, learning is improved when words and pictures are used together rather than just words alone. This is known as the...",
+                options: ["Coherence Principle", "Redundancy Principle", "Multimedia Principle", "Personalization Principle"],
+                answer: "Multimedia Principle"
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function startGame() {
+            startScreen.classList.add('hidden');
+            endScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            currentQuestionIndex = 0;
+            score = 0;
+            scoreEl.textContent = score;
+            totalQuestionsEl.textContent = questions.length;
+            showQuestion();
+        }
+
+        function showQuestion() {
+            resetState();
+            const currentQuestion = questions[currentQuestionIndex];
+            questionNumberEl.textContent = currentQuestionIndex + 1;
+            questionTextEl.textContent = currentQuestion.question;
+
+            currentQuestion.options.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.classList.add('option-btn', 'w-full', 'p-4', 'border-2', 'border-gray-300', 'rounded-lg', 'text-left', 'text-gray-700', 'bg-white', 'hover:bg-purple-100', 'hover:border-purple-400', 'focus:outline-none', 'focus:ring-2', 'focus:ring-purple-500');
+                button.addEventListener('click', selectAnswer);
+                optionsContainer.appendChild(button);
+            });
+        }
+        
+        function resetState() {
+            nextBtn.classList.add('hidden');
+            feedbackTextEl.textContent = '';
+            optionsContainer.innerHTML = '';
+            optionsContainer.classList.remove('disabled-options');
+        }
+
+        function selectAnswer(e) {
+            const selectedBtn = e.target;
+            const correct = selectedBtn.textContent === questions[currentQuestionIndex].answer;
+            
+            if (correct) {
+                score += 10;
+                scoreEl.textContent = score;
+                feedbackTextEl.textContent = "Correct! Well done!";
+                feedbackTextEl.classList.add('text-green-600');
+                feedbackTextEl.classList.remove('text-red-600');
+            } else {
+                feedbackTextEl.textContent = `Not quite! The correct answer was "${questions[currentQuestionIndex].answer}"`;
+                feedbackTextEl.classList.add('text-red-600');
+                feedbackTextEl.classList.remove('text-green-600');
+            }
+
+            Array.from(optionsContainer.children).forEach(button => {
+                if (button.textContent === questions[currentQuestionIndex].answer) {
+                    button.classList.add('correct');
+                } else {
+                    button.classList.add('incorrect');
+                }
+                button.disabled = true;
+            });
+            
+            optionsContainer.classList.add('disabled-options');
+            nextBtn.classList.remove('hidden');
+        }
+
+        function showNextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                showQuestion();
+            } else {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            gameScreen.classList.add('hidden');
+            endScreen.classList.remove('hidden');
+            finalScoreEl.textContent = score;
+            
+            const percentage = (score / (questions.length * 10)) * 100;
+            let message = '';
+            if (percentage >= 80) {
+                message = "Excellent work! You're a true Learning Sage in the making!";
+            } else if (percentage >= 50) {
+                message = "Great effort! You have a solid foundation in instructional design.";
+            } else {
+                message = "Good start! Keep reviewing the concepts to sharpen your skills.";
+            }
+            endMessageEl.textContent = message;
+        }
+
+        startBtn.addEventListener('click', startGame);
+        nextBtn.addEventListener('click', showNextQuestion);
+        restartBtn.addEventListener('click', startGame);
+
+    </script>
+</body>
+</html>
